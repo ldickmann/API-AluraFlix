@@ -1,0 +1,23 @@
+### Get all categories
+GET http://localhost:3000/api/categories
+
+### Create a new category
+POST http://localhost:3000/api/categories
+Content-Type: application/json
+
+{
+  "id": "6",
+  "category": "DEVOPS",
+  "categoryColor": "#FF5733",
+  "hoverColor": "#C70039",
+  "bgColor": "#900C3F",
+  "cards": [
+    {
+      "id": 8,
+      "title": "Introduction to DevOps",
+      "image": "/images/devops-1.png",
+      "videoLink": "https://example.com/video8",
+      "description": "In this video, we will discuss the basics of DevOps and its importance in modern software development."
+    }
+  ]
+}
