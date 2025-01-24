@@ -5,14 +5,10 @@ import {
   getCategories,
 } from "../controllers/categoryController.js";
 
+const router = express.Router();
 const upload = multer({ dest: "./uploads" });
 
-const routes = (app) => {
-  app.use(express.json());
+router.get("/", getCategories);
+router.post("/", createCategory);
 
-  app.get("/categories", getCategories);
-
-  app.post("/categories", createCategory);
-};
-
-export default routes;
+export default router;
