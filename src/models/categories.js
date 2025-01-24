@@ -1,6 +1,30 @@
 import { ObjectId } from "mongodb";
 import connectDatabase from "../config/dbConfig.js";
+import { GridFSBucket } from "mongodb";
 
+// Função para salvar arquivos no GridFS
+const uploadToGridFS = async (file) => {
+  try {
+    const db = await connectDatabase();
+    const bucket = new GridFSBucket(db, { bucketName: "images" });
+    const uploadStream = bucket.openUploadStream(file.originalname); // Use o nome do arquivo original
+    return new Promise((resolve, reject) => {
+      uploadStream.on("finish", () => {
+        resolve(uploadStream.id.toString());
+      });
+      uploadStream.on("error", (error) => {
+        reject(error);
+      });
+      uploadStream.write(file.buffer); // Escreve os dados na stream
+      uploadStream.end();
+    });
+  } catch (error) {
+    console.error("Erro ao salvar a imagem:", error);
+    throw new Error("Erro ao salvar a imagem: " + error.message);
+  }
+};
+
+// Função para listar todas as categorias
 const listarCategorias = async () => {
   try {
     const db = await connectDatabase();
@@ -12,6 +36,7 @@ const listarCategorias = async () => {
   }
 };
 
+// Função para criar uma nova categoria
 const criarCategoria = async (novaCategoria) => {
   try {
     const db = await connectDatabase();
@@ -21,13 +46,14 @@ const criarCategoria = async (novaCategoria) => {
     };
     const collection = db.collection("categories");
     await collection.insertOne(newCategory);
-
     return newCategory;
   } catch (error) {
     console.error("Erro ao criar categoria:", error);
     throw new Error("Erro ao criar categoria.");
   }
 };
+
+// Função para popular categorias com dados iniciais
 const popularCategorias = async (categorias) => {
   try {
     const db = await connectDatabase();
@@ -44,6 +70,7 @@ const popularCategorias = async (categorias) => {
   }
 };
 
+// Função para atualizar uma categoria existente
 const atualizarCategoria = async (id, dadosAtualizados) => {
   try {
     const db = await connectDatabase();
@@ -65,7 +92,8 @@ const atualizarCategoria = async (id, dadosAtualizados) => {
   }
 };
 
-const adicionarCard = async (categoryId, card) => {
+// Função para adicionar um novo card dentro de uma categoria
+const adicionarCard = async (categoryId, card, imageUrl) => {
   try {
     const db = await connectDatabase();
     const collection = db.collection("categories");
@@ -73,6 +101,7 @@ const adicionarCard = async (categoryId, card) => {
     const newCard = {
       id: Date.now(),
       ...card,
+      image: imageUrl, // Adicione a URL da imagem aqui
     };
     const update = { $push: { cards: newCard } };
     const result = await collection.updateOne(filter, update);
@@ -91,6 +120,29 @@ const adicionarCard = async (categoryId, card) => {
   }
 };
 
+// Função para excluir um card de uma categoria
+const deleteCard = async (categoryId, cardId) => {
+  try {
+    const db = await connectDatabase();
+    const collection = db.collection("categories");
+    const filter = { _id: new ObjectId(categoryId) };
+    const update = { $pull: { cards: { id: Number(cardId) } } };
+    const result = await collection.updateOne(filter, update);
+
+    if (result.modifiedCount === 0) {
+      throw new Error(
+        "Categoria não encontrada ou nenhuma atualização realizada."
+      );
+    }
+    const updatedCategory = await collection.findOne(filter);
+    return updatedCategory;
+  } catch (error) {
+    console.error("Erro ao remover card:", error);
+    throw new Error("Erro ao remover card.");
+  }
+};
+
+// Função para listar todas as categorias com seus cards
 const listarCategoriasCards = async () => {
   try {
     const db = await connectDatabase();
@@ -115,6 +167,7 @@ const listarCategoriasCards = async () => {
     throw new Error("Erro ao listar categorias.");
   }
 };
+
 export {
   listarCategorias,
   criarCategoria,
@@ -122,4 +175,6 @@ export {
   listarCategoriasCards,
   popularCategorias,
   adicionarCard,
+  deleteCard,
+  uploadToGridFS,
 };
