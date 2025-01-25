@@ -5,7 +5,7 @@ Esta é a API do **AluraFlix**, um serviço para gerenciar categorias de vídeos
 ## Instalação
 
 1. Clone o repositório:
-   `git clone https://github.com/seu-usuario/api-aluraflix.git`
+   `git clone git clone https://github.com/ldickmann/API-AluraFlix.git`
 
 2. Navegue até o diretório do projeto:
    `cd api-aluraflix`
