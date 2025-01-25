@@ -7,8 +7,10 @@ import {
   adicionarCard,
   deleteCard,
   atualizarCard,
+  moverCard,
 } from "../models/categories.js";
 import { uploadImage } from "../middlewares/upload.js";
+import { ObjectId } from "mongodb";
 
 // Função para listar categorias com cards
 export async function getCategories(req, res) {
@@ -47,23 +49,20 @@ export async function updateCategory(req, res) {
 }
 
 export const updateCard = async (req, res) => {
+  const { categoryId, cardId, updatedCardData } = req.body;
   try {
-    const { id } = req.params; // ID do card
-    const dadosCardAtualizados = req.body; // Dados enviados no corpo da requisição
+    console.log(`Atualizando card na categoria: ${categoryId}`);
+    console.log(`Card ID: ${cardId}`);
+    console.log(`Dados do card a atualizar:`, updatedCardData);
 
-    console.log("Updating card with id:", id);
-    console.log("Updated card data:", dadosCardAtualizados);
+    await atualizarCard(categoryId, cardId, updatedCardData);
 
-    const cardAtualizado = await atualizarCard(id, dadosCardAtualizados);
-
-    if (!cardAtualizado) {
-      return res.status(404).json({ message: "Card não encontrado" });
-    }
-
-    res.status(200).json(cardAtualizado);
-  } catch (erro) {
-    console.error("Error updating card:", erro);
-    res.status(500).json({ message: erro.message });
+    res.status(200).json({ message: "Card atualizado com sucesso!" });
+  } catch (err) {
+    console.error("Erro ao atualizar card:", err);
+    res
+      .status(500)
+      .json({ message: "Erro ao atualizar card.", error: err.message });
   }
 };
 
@@ -80,8 +79,6 @@ export async function popularCategoriasController(req, res) {
 }
 
 export async function addCardToCategoryController(req, res) {
-  const { id } = req.params;
-
   // Processando o upload da imagem
   uploadImage(req, res, async (err) => {
     if (err) {
@@ -96,10 +93,21 @@ export async function addCardToCategoryController(req, res) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
     }
 
+    const { categoryId } = req.params;
+
+    // Validate categoryId
+    if (!ObjectId.isValid(categoryId)) {
+      return res.status(400).json({ error: "Invalid categoryId" });
+    }
+
     try {
       // Se o upload for bem-sucedido, continue com o processo de adicionar o card
       const imageUrl = `/uploads/${req.file.filename}`; // URL do arquivo de imagem
-      const updatedCategory = await adicionarCard(id, req.body, imageUrl);
+      const updatedCategory = await adicionarCard(
+        categoryId,
+        req.body,
+        imageUrl
+      );
       res.status(200).json(updatedCategory);
     } catch (error) {
       console.error("Erro ao adicionar card à categoria:", error);
@@ -115,7 +123,22 @@ export async function deleteCardToCategoryController(req, res) {
     const updatedCategory = await deleteCard(categoryId, cardId);
     res.status(200).json(updatedCategory);
   } catch (error) {
-    console.error("Erro ao remover card:", error);
-    res.status(500).json({ error: "Erro ao remover card" });
+    console.error("Erro ao remover card da categoria:", error);
+    res.status(500).json({ error: "Erro ao remover card da categoria" });
+  }
+}
+
+export async function moveCardController(req, res) {
+  const { categoryIdOrigem, categoryIdDestino, cardId } = req.body;
+  try {
+    const updatedCategory = await moverCard(
+      categoryIdOrigem,
+      categoryIdDestino,
+      cardId
+    );
+    res.status(200).json(updatedCategory);
+  } catch (error) {
+    console.error("Erro ao mover card:", error);
+    res.status(500).json({ error: "Erro ao mover card" });
   }
 }
