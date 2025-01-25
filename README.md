@@ -38,11 +38,9 @@ Categorias
 - GET /categorias: Lista todas as categorias com seus cards.
 - POST /categorias: Cria uma nova categoria.
 - PUT /categorias/:id: Atualiza uma categoria existente.
-- POST /categorias/popular: Popula categorias com dados iniciais.
 - POST /categorias/:categoryId/cards: Adiciona um card a uma categoria (com upload de imagem).
 - PUT /categorias/:categoryId/cards/:cardId: Atualiza um card existente.
 - DELETE /categorias/:categoryId/cards/:cardId: Remove um card de uma categoria.
-- PUT /categorias/moverCard: Move um card de uma categoria para outra.
 
 ### Estrutura do Projeto
 
