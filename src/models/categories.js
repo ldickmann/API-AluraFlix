@@ -123,13 +123,15 @@ const adicionarCard = async (categoryId, card, imageUrl) => {
   }
 };
 
-// Função para excluir um card de uma categoria
 const deleteCard = async (categoryId, cardId) => {
   try {
     const db = await connectDatabase();
     const collection = db.collection("categories");
+
+    // Corrigindo o uso de ObjectId para buscar o card corretamente
     const filter = { _id: new ObjectId(categoryId) };
-    const update = { $pull: { cards: { id: Number(cardId) } } };
+    const update = { $pull: { cards: { _id: new ObjectId(cardId) } } }; // Garantir que estamos buscando pelo _id do card
+
     const result = await collection.updateOne(filter, update);
 
     if (result.modifiedCount === 0) {
