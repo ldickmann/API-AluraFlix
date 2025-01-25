@@ -37,6 +37,7 @@ export async function createCategory(req, res) {
 
 // Função para atualizar uma categoria
 export async function updateCategory(req, res) {
+  console.log("Request body in updateCard:", req.body);
   const { id } = req.params;
   const dadosAtualizados = req.body;
   try {
@@ -49,20 +50,26 @@ export async function updateCategory(req, res) {
 }
 
 export const updateCard = async (req, res) => {
-  const { categoryId, cardId, updatedCardData } = req.body;
+  const { categoryId, cardId } = req.params;
+  const updatedCardData = req.body;
+
+  if (!ObjectId.isValid(categoryId) || !ObjectId.isValid(cardId)) {
+    return res.status(400).json({ error: "Invalid categoryId or cardId" });
+  }
+
   try {
-    console.log(`Atualizando card na categoria: ${categoryId}`);
-    console.log(`Card ID: ${cardId}`);
-    console.log(`Dados do card a atualizar:`, updatedCardData);
-
-    await atualizarCard(categoryId, cardId, updatedCardData);
-
-    res.status(200).json({ message: "Card atualizado com sucesso!" });
-  } catch (err) {
-    console.error("Erro ao atualizar card:", err);
-    res
-      .status(500)
-      .json({ message: "Erro ao atualizar card.", error: err.message });
+    const updatedCategory = await atualizarCard(
+      categoryId,
+      cardId,
+      updatedCardData
+    );
+    res.status(200).json(updatedCategory);
+  } catch (error) {
+    console.error("Erro ao atualizar card:", error);
+    res.status(500).json({
+      message: `Erro ao atualizar card (${categoryId}, ${cardId}): ${error.message}`,
+      error,
+    });
   }
 };
 
@@ -129,16 +136,26 @@ export async function deleteCardToCategoryController(req, res) {
 }
 
 export async function moveCardController(req, res) {
-  const { categoryIdOrigem, categoryIdDestino, cardId } = req.body;
+  const { categoryIdOrigem, categoryIdDestino, cardId } = req.params;
+  console.log("Received move card request:", {
+    categoryIdOrigem,
+    categoryIdDestino,
+    cardId,
+  });
+
   try {
+    console.log("Attempting to move card...");
     const updatedCategory = await moverCard(
       categoryIdOrigem,
       categoryIdDestino,
       cardId
     );
+    console.log("Card moved successfully. Updated category:", updatedCategory);
     res.status(200).json(updatedCategory);
   } catch (error) {
-    console.error("Erro ao mover card:", error);
-    res.status(500).json({ error: "Erro ao mover card" });
+    console.error("Error moving card:", error);
+    res
+      .status(500)
+      .json({ error: `Error moving card ${cardId}: ${error.message}` });
   }
 }

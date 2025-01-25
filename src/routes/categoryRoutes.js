@@ -17,10 +17,11 @@ router.post("/", createCategory);
 router.put("/:id", updateCategory);
 router.put("/:categoryId/cards/:cardId", updateCard);
 router.post("/popular", popularCategoriasController);
-// router.post("/:id/cards", addCardToCategoryController);
 router.post("/:categoryId/cards", addCardToCategoryController);
-
 router.delete("/:categoryId/cards/:cardId", deleteCardToCategoryController);
-router.put("/moverCard", moveCardController);
+router.put(
+  "/moverCard/:categoryIdOrigem/:categoryIdDestino/:cardId",
+  moveCardController
+);
 
 export default router;

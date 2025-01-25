@@ -73,6 +73,10 @@ const popularCategorias = async (categorias) => {
 // Função para atualizar uma categoria existente
 const atualizarCategoria = async (id, dadosAtualizados) => {
   try {
+    if (!ObjectId.isValid(id)) {
+      throw new Error("ID inválido.");
+    }
+
     const db = await connectDatabase();
     const collection = db.collection("categories");
     const filter = { _id: new ObjectId(id) };
@@ -174,16 +178,38 @@ const listarCategoriasCards = async () => {
 };
 
 async function atualizarCard(categoryId, cardId, updatedCardData) {
-  const db = await connectDatabase();
-  const collection = db.collection("categories");
+  try {
+    const db = await connectDatabase();
+    const collection = db.collection("categories");
 
-  const objectIdCategory = new ObjectId(categoryId);
-  const objectIdCard = new ObjectId(cardId);
+    console.log(`Atualizando card ${cardId} na categoria ${categoryId}`);
 
-  const result = await collection.updateOne(
-    { _id: objectIdCategory, "cards._id": objectIdCard },
-    { $set: { "cards.$": updatedCardData } }
-  );
+    const result = await collection.updateOne(
+      { _id: new ObjectId(categoryId), "cards._id": new ObjectId(cardId) },
+      {
+        $set: {
+          "cards.$.title": updatedCardData.title,
+          "cards.$.description": updatedCardData.description,
+          "cards.$.image": updatedCardData.image,
+          "cards.$.videoLink": updatedCardData.videoLink,
+        },
+      }
+    );
+
+    console.log(`Resultado da atualização: ${JSON.stringify(result)}`);
+
+    if (result.modifiedCount === 0) {
+      throw new Error("Card não encontrado ou nenhuma atualização realizada.");
+    }
+
+    const updatedCategory = await collection.findOne({
+      _id: new ObjectId(categoryId),
+    });
+    return updatedCategory;
+  } catch (error) {
+    console.error("Erro ao atualizar card:", error);
+    throw new Error("Erro ao atualizar card.");
+  }
 }
 
 const moverCard = async (categoryIdOrigem, categoryIdDestino, cardId) => {
@@ -191,32 +217,35 @@ const moverCard = async (categoryIdOrigem, categoryIdDestino, cardId) => {
     const db = await connectDatabase();
     const collection = db.collection("categories");
 
-    // Busca o card usando o id numérico (importante!)
+    // Verifica se o card existe na categoria de origem
     const card = await collection.findOne(
-      { _id: new ObjectId(categoryIdOrigem), "cards.id": parseInt(cardId) }, //parseInt para garantir que seja um número
-      { projection: { "cards.$": 1 } } // Busca o primeiro card que encontrar com id correspondente
+      {
+        _id: new ObjectId(categoryIdOrigem),
+        "cards._id": new ObjectId(cardId),
+      },
+      { projection: { "cards.$": 1 } }
     );
 
     if (!card || !card.cards || card.cards.length === 0) {
-      throw new Error("Card não encontrado.");
+      throw new Error("Card não encontrado na categoria de origem.");
     }
 
-    const cardToMove = card.cards[0]; // Obtém o objeto do card
+    const cardToMove = card.cards[0];
 
-    // Remove o card da categoria de origem usando o objeto inteiro do card
+    // Remove o card da categoria de origem
     const resultOrigem = await collection.updateOne(
       { _id: new ObjectId(categoryIdOrigem) },
-      { $pull: { cards: cardToMove } } // Remove o objeto inteiro
+      { $pull: { cards: { _id: new ObjectId(cardId) } } }
     );
 
     if (resultOrigem.modifiedCount === 0) {
       throw new Error("Card não encontrado na categoria de origem.");
     }
 
-    // Adiciona o card na categoria de destino usando o objeto inteiro
+    // Adiciona o card na categoria de destino
     const resultDestino = await collection.updateOne(
       { _id: new ObjectId(categoryIdDestino) },
-      { $push: { cards: cardToMove } } // Adiciona o objeto inteiro
+      { $push: { cards: cardToMove } }
     );
 
     if (resultDestino.modifiedCount === 0) {
@@ -231,7 +260,7 @@ const moverCard = async (categoryIdOrigem, categoryIdDestino, cardId) => {
     return updatedCategory;
   } catch (error) {
     console.error("Erro ao mover card:", error);
-    throw error; // importante: re-lance o erro para ser capturado no front-end
+    throw error;
   }
 };
 
