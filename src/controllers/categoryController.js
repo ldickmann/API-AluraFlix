@@ -6,6 +6,7 @@ import {
   popularCategorias,
   adicionarCard,
   deleteCard,
+  atualizarCard,
 } from "../models/categories.js";
 import { uploadImage } from "../middlewares/upload.js";
 
@@ -45,26 +46,23 @@ export async function updateCategory(req, res) {
   }
 }
 
-// Função para atualizar um card dentro de uma categoria
 export const updateCard = async (req, res) => {
   try {
-    const { categoryId, cardId } = req.params; // IDs da categoria e do card
+    const { id } = req.params; // ID do card
     const dadosCardAtualizados = req.body; // Dados enviados no corpo da requisição
 
-    const cardAtualizado = await atualizarCard(
-      categoryId,
-      cardId,
-      dadosCardAtualizados
-    );
+    console.log("Updating card with id:", id);
+    console.log("Updated card data:", dadosCardAtualizados);
+
+    const cardAtualizado = await atualizarCard(id, dadosCardAtualizados);
 
     if (!cardAtualizado) {
-      return res
-        .status(404)
-        .json({ message: "Card ou categoria não encontrados" });
+      return res.status(404).json({ message: "Card não encontrado" });
     }
 
     res.status(200).json(cardAtualizado);
   } catch (erro) {
+    console.error("Error updating card:", erro);
     res.status(500).json({ message: erro.message });
   }
 };

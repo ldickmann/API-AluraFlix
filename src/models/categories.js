@@ -168,6 +168,33 @@ const listarCategoriasCards = async () => {
   }
 };
 
+// Função para atualizar um card existente
+const atualizarCard = async (categoryId, cardId, dadosCardAtualizados) => {
+  try {
+    const db = await connectDatabase();
+    const collection = db.collection("categories");
+    const filter = {
+      _id: new ObjectId(categoryId),
+      "cards.id": Number(cardId),
+    };
+    const update = {
+      $set: {
+        "cards.$": dadosCardAtualizados,
+      },
+    };
+    const result = await collection.updateOne(filter, update);
+
+    if (result.modifiedCount === 0) {
+      throw new Error("Card ou categoria não encontrados.");
+    }
+    const updatedCategory = await collection.findOne(filter);
+    return updatedCategory.cards.find((card) => card.id === Number(cardId));
+  } catch (error) {
+    console.error("Erro ao atualizar card:", error);
+    throw new Error("Erro ao atualizar card.");
+  }
+};
+
 export {
   listarCategorias,
   criarCategoria,
@@ -177,4 +204,5 @@ export {
   adicionarCard,
   deleteCard,
   uploadToGridFS,
+  atualizarCard,
 };
