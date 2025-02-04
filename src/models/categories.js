@@ -182,24 +182,29 @@ async function atualizarCard(categoryId, cardId, updatedCardData) {
     const db = await connectDatabase();
     const collection = db.collection("categories");
 
-    console.log(`Atualizando card ${cardId} na categoria ${categoryId}`);
-
-    const result = await collection.updateOne(
-      { _id: new ObjectId(categoryId), "cards._id": new ObjectId(cardId) },
-      {
-        $set: {
-          "cards.$.title": updatedCardData.title,
-          "cards.$.description": updatedCardData.description,
-          "cards.$.image": updatedCardData.image,
-          "cards.$.videoLink": updatedCardData.videoLink,
-        },
-      }
+    // 1. Delete existing card
+    const deleteResult = await collection.updateOne(
+      { _id: new ObjectId(categoryId) },
+      { $pull: { cards: { _id: new ObjectId(cardId) } } }
     );
 
-    console.log(`Resultado da atualização: ${JSON.stringify(result)}`);
+    if (deleteResult.modifiedCount === 0) {
+      throw new Error("Card não encontrado para atualização");
+    }
 
-    if (result.modifiedCount === 0) {
-      throw new Error("Card não encontrado ou nenhuma atualização realizada.");
+    // 2. Add new card with updated data but keeping same ID
+    const newCard = {
+      _id: new ObjectId(cardId), // Mantém o mesmo ID
+      ...updatedCardData,
+    };
+
+    const addResult = await collection.updateOne(
+      { _id: new ObjectId(categoryId) },
+      { $push: { cards: newCard } }
+    );
+
+    if (addResult.modifiedCount === 0) {
+      throw new Error("Erro ao readicionar card atualizado");
     }
 
     const updatedCategory = await collection.findOne({
@@ -208,61 +213,9 @@ async function atualizarCard(categoryId, cardId, updatedCardData) {
     return updatedCategory;
   } catch (error) {
     console.error("Erro ao atualizar card:", error);
-    throw new Error("Erro ao atualizar card.");
+    throw new Error("Erro ao atualizar card: " + error.message);
   }
 }
-
-const moverCard = async (categoryIdOrigem, categoryIdDestino, cardId) => {
-  try {
-    const db = await connectDatabase();
-    const collection = db.collection("categories");
-
-    // Verifica se o card existe na categoria de origem
-    const card = await collection.findOne(
-      {
-        _id: new ObjectId(categoryIdOrigem),
-        "cards._id": new ObjectId(cardId),
-      },
-      { projection: { "cards.$": 1 } }
-    );
-
-    if (!card || !card.cards || card.cards.length === 0) {
-      throw new Error("Card não encontrado na categoria de origem.");
-    }
-
-    const cardToMove = card.cards[0];
-
-    // Remove o card da categoria de origem
-    const resultOrigem = await collection.updateOne(
-      { _id: new ObjectId(categoryIdOrigem) },
-      { $pull: { cards: { _id: new ObjectId(cardId) } } }
-    );
-
-    if (resultOrigem.modifiedCount === 0) {
-      throw new Error("Card não encontrado na categoria de origem.");
-    }
-
-    // Adiciona o card na categoria de destino
-    const resultDestino = await collection.updateOne(
-      { _id: new ObjectId(categoryIdDestino) },
-      { $push: { cards: cardToMove } }
-    );
-
-    if (resultDestino.modifiedCount === 0) {
-      throw new Error(
-        "Categoria de destino não encontrada ou nenhuma atualização realizada."
-      );
-    }
-
-    const updatedCategory = await collection.findOne({
-      _id: new ObjectId(categoryIdDestino),
-    });
-    return updatedCategory;
-  } catch (error) {
-    console.error("Erro ao mover card:", error);
-    throw error;
-  }
-};
 
 export {
   listarCategorias,
@@ -274,5 +227,4 @@ export {
   deleteCard,
   uploadToGridFS,
   atualizarCard,
-  moverCard,
 };

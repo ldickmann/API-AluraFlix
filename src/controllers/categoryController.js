@@ -7,7 +7,6 @@ import {
   adicionarCard,
   deleteCard,
   atualizarCard,
-  moverCard,
 } from "../models/categories.js";
 import { uploadImage } from "../middlewares/upload.js";
 import { ObjectId } from "mongodb";
@@ -54,7 +53,7 @@ export const updateCard = async (req, res) => {
   const updatedCardData = req.body;
 
   if (!ObjectId.isValid(categoryId) || !ObjectId.isValid(cardId)) {
-    return res.status(400).json({ error: "Invalid categoryId or cardId" });
+    return res.status(400).json({ error: "IDs inválidos" });
   }
 
   try {
@@ -65,11 +64,7 @@ export const updateCard = async (req, res) => {
     );
     res.status(200).json(updatedCategory);
   } catch (error) {
-    console.error("Erro ao atualizar card:", error);
-    res.status(500).json({
-      message: `Erro ao atualizar card (${categoryId}, ${cardId}): ${error.message}`,
-      error,
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -132,30 +127,5 @@ export async function deleteCardToCategoryController(req, res) {
   } catch (error) {
     console.error("Erro ao remover card da categoria:", error);
     res.status(500).json({ error: "Erro ao remover card da categoria" });
-  }
-}
-
-export async function moveCardController(req, res) {
-  const { categoryIdOrigem, categoryIdDestino, cardId } = req.params;
-  console.log("Received move card request:", {
-    categoryIdOrigem,
-    categoryIdDestino,
-    cardId,
-  });
-
-  try {
-    console.log("Attempting to move card...");
-    const updatedCategory = await moverCard(
-      categoryIdOrigem,
-      categoryIdDestino,
-      cardId
-    );
-    console.log("Card moved successfully. Updated category:", updatedCategory);
-    res.status(200).json(updatedCategory);
-  } catch (error) {
-    console.error("Error moving card:", error);
-    res
-      .status(500)
-      .json({ error: `Error moving card ${cardId}: ${error.message}` });
   }
 }
