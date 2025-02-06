@@ -7,6 +7,14 @@ import routes from "./src/routes/index.js";
 dotenv.config();
 
 const app = express();
+
+// Configurar CORS para permitir requisições do front-end local
+const corsOptions = {
+  origin: "http://localhost:5173",
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
