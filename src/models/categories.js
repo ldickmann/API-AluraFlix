@@ -217,6 +217,95 @@ async function atualizarCard(categoryId, cardId, updatedCardData) {
   }
 }
 
+// Função para mover um card de uma categoria para outra
+const moveCardToCategory = async (
+  sourceCategoryId,
+  destinationCategoryId,
+  cardId
+) => {
+  try {
+    if (
+      !ObjectId.isValid(sourceCategoryId) ||
+      !ObjectId.isValid(destinationCategoryId) ||
+      !ObjectId.isValid(cardId)
+    ) {
+      throw new Error("IDs inválidos.");
+    }
+
+    const db = await connectDatabase();
+    const collection = db.collection("categories");
+
+    // 1. Remover o card da categoria de origem
+    const sourceCategory = await collection.findOne({
+      _id: new ObjectId(sourceCategoryId),
+    });
+
+    if (!sourceCategory) {
+      throw new Error("Categoria de origem não encontrada.");
+    }
+
+    const cardToMove = sourceCategory.cards.find(
+      (card) => card._id.toString() === cardId
+    );
+
+    if (!cardToMove) {
+      throw new Error("Card não encontrado na categoria de origem.");
+    }
+
+    const deleteResult = await collection.updateOne(
+      { _id: new ObjectId(sourceCategoryId) },
+      { $pull: { cards: { _id: new ObjectId(cardId) } } }
+    );
+
+    if (deleteResult.modifiedCount === 0) {
+      throw new Error(
+        "Falha ao remover o card da categoria de origem. Verifique se o cardId está correto."
+      );
+    }
+
+    // 2. Adicionar o card à categoria de destino
+    const destinationCategory = await collection.findOne({
+      _id: new ObjectId(destinationCategoryId),
+    });
+
+    if (!destinationCategory) {
+      throw new Error("Categoria de destino não encontrada.");
+    }
+
+    const addResult = await collection.updateOne(
+      { _id: new ObjectId(destinationCategoryId) },
+      { $push: { cards: cardToMove } }
+    );
+
+    if (addResult.modifiedCount === 0) {
+      // Se falhar ao adicionar, tenta repor o card na categoria original
+      await collection.updateOne(
+        { _id: new ObjectId(sourceCategoryId) },
+        { $push: { cards: cardToMove } }
+      );
+      throw new Error(
+        "Falha ao adicionar o card à categoria de destino. O card foi reposto na categoria original."
+      );
+    }
+
+    // 3. Retornar a categoria de origem e destino atualizadas (opcional, mas útil)
+    const updatedSourceCategory = await collection.findOne({
+      _id: new ObjectId(sourceCategoryId),
+    });
+    const updatedDestinationCategory = await collection.findOne({
+      _id: new ObjectId(destinationCategoryId),
+    });
+
+    return {
+      sourceCategory: updatedSourceCategory,
+      destinationCategory: updatedDestinationCategory,
+    };
+  } catch (error) {
+    console.error("Erro ao mover o card:", error);
+    throw new Error("Erro ao mover o card: " + error.message);
+  }
+};
+
 export {
   listarCategorias,
   criarCategoria,
@@ -227,4 +316,5 @@ export {
   deleteCard,
   uploadToGridFS,
   atualizarCard,
+  moveCardToCategory,
 };

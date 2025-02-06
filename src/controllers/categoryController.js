@@ -7,6 +7,7 @@ import {
   adicionarCard,
   deleteCard,
   atualizarCard,
+  moveCardToCategory,
 } from "../models/categories.js";
 import { uploadImage } from "../middlewares/upload.js";
 import { ObjectId } from "mongodb";
@@ -129,3 +130,24 @@ export async function deleteCardToCategoryController(req, res) {
     res.status(500).json({ error: "Erro ao remover card da categoria" });
   }
 }
+
+export const moveCardController = async (req, res) => {
+  const { sourceCategoryId, destinationCategoryId, cardId } = req.params;
+
+  try {
+    const { sourceCategory, destinationCategory } = await moveCardToCategory(
+      sourceCategoryId,
+      destinationCategoryId,
+      cardId
+    );
+
+    res.status(200).json({
+      message: "Card movido com sucesso!",
+      sourceCategory,
+      destinationCategory,
+    });
+  } catch (error) {
+    console.error("Erro ao mover o card:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
