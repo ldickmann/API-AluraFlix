@@ -12,11 +12,14 @@ import {
 
 const router = express.Router();
 
+// Rotas de categorias
 router.get("/", getCategories);
 router.post("/", createCategory);
 router.put("/:id", updateCategory);
-router.put("/:categoryId/cards/:cardId", updateCard);
 router.post("/popular", popularCategoriasController);
+
+// Rotas de cards
+router.put("/:categoryId/cards/:cardId", updateCard);
 router.post("/:categoryId/cards", addCardToCategoryController);
 router.delete("/:categoryId/cards/:cardId", deleteCardToCategoryController);
 router.patch(

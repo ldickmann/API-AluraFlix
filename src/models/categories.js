@@ -7,7 +7,7 @@ const uploadToGridFS = async (file) => {
   try {
     const db = await connectDatabase();
     const bucket = new GridFSBucket(db, { bucketName: "images" });
-    const uploadStream = bucket.openUploadStream(file.originalname); // Use o nome do arquivo original
+    const uploadStream = bucket.openUploadStream(file.originalname);
     return new Promise((resolve, reject) => {
       uploadStream.on("finish", () => {
         resolve(uploadStream.id.toString());
@@ -15,7 +15,7 @@ const uploadToGridFS = async (file) => {
       uploadStream.on("error", (error) => {
         reject(error);
       });
-      uploadStream.write(file.buffer); // Escreve os dados na stream
+      uploadStream.write(file.buffer);
       uploadStream.end();
     });
   } catch (error) {
@@ -96,6 +96,7 @@ const atualizarCategoria = async (id, dadosAtualizados) => {
   }
 };
 
+// Função para adicionar um card a uma categoria
 const adicionarCard = async (categoryId, card, imageUrl) => {
   try {
     if (!ObjectId.isValid(categoryId)) {
@@ -127,12 +128,12 @@ const adicionarCard = async (categoryId, card, imageUrl) => {
   }
 };
 
+// Função para deletar um card de uma categoria
 const deleteCard = async (categoryId, cardId) => {
   try {
     const db = await connectDatabase();
     const collection = db.collection("categories");
 
-    // Corrigindo o uso de ObjectId para buscar o card corretamente
     const filter = { _id: new ObjectId(categoryId) };
     const update = { $pull: { cards: { _id: new ObjectId(cardId) } } }; // Garantir que estamos buscando pelo _id do card
 
@@ -182,7 +183,6 @@ async function atualizarCard(categoryId, cardId, updatedCardData) {
     const db = await connectDatabase();
     const collection = db.collection("categories");
 
-    // 1. Delete existing card
     const deleteResult = await collection.updateOne(
       { _id: new ObjectId(categoryId) },
       { $pull: { cards: { _id: new ObjectId(cardId) } } }
@@ -192,9 +192,8 @@ async function atualizarCard(categoryId, cardId, updatedCardData) {
       throw new Error("Card não encontrado para atualização");
     }
 
-    // 2. Add new card with updated data but keeping same ID
     const newCard = {
-      _id: new ObjectId(cardId), // Mantém o mesmo ID
+      _id: new ObjectId(cardId),
       ...updatedCardData,
     };
 
@@ -235,7 +234,6 @@ const moveCardToCategory = async (
     const db = await connectDatabase();
     const collection = db.collection("categories");
 
-    // 1. Remover o card da categoria de origem
     const sourceCategory = await collection.findOne({
       _id: new ObjectId(sourceCategoryId),
     });
@@ -263,7 +261,6 @@ const moveCardToCategory = async (
       );
     }
 
-    // 2. Adicionar o card à categoria de destino
     const destinationCategory = await collection.findOne({
       _id: new ObjectId(destinationCategoryId),
     });
@@ -288,7 +285,6 @@ const moveCardToCategory = async (
       );
     }
 
-    // 3. Retornar a categoria de origem e destino atualizadas (opcional, mas útil)
     const updatedSourceCategory = await collection.findOne({
       _id: new ObjectId(sourceCategoryId),
     });
